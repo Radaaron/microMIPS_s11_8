@@ -44,7 +44,8 @@ public class Driver {
 						JOptionPane.showMessageDialog(null, "SYNTAX ERROR!");
 					}
 					else {
-						
+						// no error
+						opcodeLines = opcodeConverter.opcodeConvert(codeLines);
 					}
 				}
 			}
