@@ -12,10 +12,14 @@ import javax.swing.table.TableModel;
 
 public class Driver {
 	// main and gui class
+	static String[] codeLines;
+	static String[] opcodeLines;
 	String[] opcodeColumn;
 	Object[][] opcodeData;
+	static OpcodeConverter opcodeConverter;
 	
 	public static void main(String[] args) {
+		opcodeConverter = new OpcodeConverter();
 		Scanner a = new Scanner(System.in);
 		JFrame mainFrame = new JFrame();
 		mainFrame.setSize(new Dimension(1400, 800));
@@ -32,8 +36,17 @@ public class Driver {
 		compileBtn.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				// gets string from codeArea
-				System.out.print(codeArea.getText());
+				// get input from codeArea and split into string array, error check
+				codeLines = (codeArea.getText().toUpperCase()).split(System.getProperty("line.separator"));
+				if(codeLines != null) {
+					if(opcodeConverter.errorCheck(codeLines)) {
+						// error
+						JOptionPane.showMessageDialog(null, "SYNTAX ERROR!");
+					}
+					else {
+						
+					}
+				}
 			}
 		});
 		String[] opcodeColumn = {"B: 31-26", "25-21","20-16","15-11","10-6", "5-0", "Hex"};
