@@ -6,16 +6,13 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableColumnModel;
-import javax.swing.table.TableModel;
 
 public class Driver {
 	// main and gui class
 	static String[] codeLines;
-	static String[] opcodeLines;
+	static ArrayList<String> opcodeList;
 	String[] opcodeColumn;
-	Object[][] opcodeData;
+	static Object[][] opcodeData = {};
 	static OpcodeConverter opcodeConverter;
 	
 	public static void main(String[] args) {
@@ -32,33 +29,33 @@ public class Driver {
 		JSplitPane p1 = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
 		JTextArea codeArea = new JTextArea(48, 60);
 		codeArea.setEditable(true);
+		String[] opcodeColumn = {"Binary", "Hex"};
+	    JTable opcodeTable = new JTable(opcodeData, opcodeColumn){  
+	    	private static final long serialVersionUID = 1L;
+			public boolean isCellEditable(int row, int column){  
+	          return false;
+	        }
+	    };
+	    JScrollPane opcodeScrollPane = new JScrollPane(opcodeTable);
 		JButton compileBtn = new JButton("Compile");
 		compileBtn.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				// get input from codeArea and split into string array, error check
 				codeLines = (codeArea.getText().toUpperCase()).split(System.getProperty("line.separator"));
-				if(codeLines != null) {
+				if(codeLines.length != 0) {
 					if(opcodeConverter.errorCheck(codeLines)) {
 						// error
 						JOptionPane.showMessageDialog(null, "SYNTAX ERROR!");
 					}
 					else {
-						// no error
-						opcodeLines = opcodeConverter.opcodeConvert(codeLines);
+						// no error, get converted opcodeList
+						opcodeList = opcodeConverter.opcodeConvert(codeLines);
+						System.out.println(Arrays.toString(opcodeList.toArray()));
 					}
 				}
 			}
 		});
-		String[] opcodeColumn = {"B: 31-26", "25-21","20-16","15-11","10-6", "5-0", "Hex"};
-		Object[][] opcodeData = {};
-	    JTable opcodeTable = new JTable(opcodeData, opcodeColumn){  
-	    	private static final long serialVersionUID = 1L;
-			public boolean isCellEditable(int row, int column){  
-	          return false;
-	        }  
-	    };
-	    JScrollPane opcodeScrollPane = new JScrollPane(opcodeTable);
 	    JPanel opcodePane = new JPanel();
 	    opcodePane.setLayout(new BoxLayout(opcodePane, BoxLayout.Y_AXIS));		
 	    opcodePane.add(compileBtn);
