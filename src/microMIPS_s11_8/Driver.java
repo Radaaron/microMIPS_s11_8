@@ -11,8 +11,6 @@ public class Driver {
 	// main and gui class
 	static String[] codeLines;
 	static ArrayList<String> opcodeList;
-	String[] opcodeColumn;
-	static Object[][] opcodeData = {};
 	static OpcodeConverter opcodeConverter;
 	
 	public static void main(String[] args) {
@@ -29,14 +27,11 @@ public class Driver {
 		JSplitPane p1 = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
 		JTextArea codeArea = new JTextArea(48, 60);
 		codeArea.setEditable(true);
-		String[] opcodeColumn = {"Binary", "Hex"};
-	    JTable opcodeTable = new JTable(opcodeData, opcodeColumn){  
-	    	private static final long serialVersionUID = 1L;
-			public boolean isCellEditable(int row, int column){  
-	          return false;
-	        }
-	    };
-	    JScrollPane opcodeScrollPane = new JScrollPane(opcodeTable);
+		JList opcodeJList = new JList(); //data has type Object[]
+		opcodeJList.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
+		opcodeJList.setLayoutOrientation(JList.VERTICAL);
+		opcodeJList.setVisibleRowCount(-1);
+	    JScrollPane opcodeScrollPane = new JScrollPane(opcodeJList);
 		JButton compileBtn = new JButton("Compile");
 		compileBtn.addActionListener(new ActionListener() {
 			@Override
@@ -51,7 +46,11 @@ public class Driver {
 					else {
 						// no error, get converted opcodeList
 						opcodeList = opcodeConverter.opcodeConvert(codeLines);
-						System.out.println(Arrays.toString(opcodeList.toArray()));
+						DefaultListModel listModel = new DefaultListModel();
+						for(int i = 0; i < opcodeList.size(); i++) {
+							listModel.addElement(opcodeList.get(i));
+						}
+						opcodeJList.setModel(listModel);
 					}
 				}
 			}

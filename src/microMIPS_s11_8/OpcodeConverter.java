@@ -14,44 +14,18 @@ public class OpcodeConverter {
 		// check syntax per line
 		for(int i = 0; i < codeLines.length; i++) {
 			String instruction = codeLines[i];
-			// break down into string array per word, ignoring spaces and commas
-			if(instruction.contains(" ")){
-				String[] ins = instruction.split("\\s*(\\s|,)\\s*");
-				// check regex syntax based on instruction
-				for(int j = 0; j < ins.length; j++) {
-					System.out.println(ins[j]);
-				}
-				if(ins[0].equals("LD") || ins[0].equals("SD")){
-					if(!(ins[1].matches("R(3[0-1]|[1-2][0-9]|[0-9])") && ins[2].matches("[0-9][0-9][0-9][0-9][(]R[0-31][)]") && ins.length == 3)) {
-						return true;
-					}
-				}
-				else if(ins[0].equals("DADDIU") || ins[0].equals("XORI")) {
-					if(!(ins[1].matches("R(3[0-1]|[1-2][0-9]|[0-9])") && ins[2].matches("R(3[0-1]|[1-2][0-9]|[0-9])") && ins[3].matches("[#][0-9][0-9][0-9][0-9]") && ins.length == 4)) {
-						return true;
-					}
-				}
-				else if(ins[0].equals("DADDU") || ins[0].equals("SLT")) {
-					if(!(ins[1].matches("R(3[0-1]|[1-2][0-9]|[0-9])") && ins[2].matches("R(3[0-1]|[1-2][0-9]|[0-9])") && ins[3].matches("R(3[0-1]|[1-2][0-9]|[0-9])") && ins.length == 4)) {
-						return true;
-					}
-				}
-				else if(ins[0].equals("BLTZC")) {
-					if(!(ins[1].matches("R(3[0-1]|[1-2][0-9]|[0-9])") && ins.length == 3)) {
-						return true;
-					}
-				}
-				else if(ins[0].equals("J")){
-					if(!(ins.length == 2)) {
-						return true;
-					}
-				}
-				else {
-					return true;
-				}
-				// only happens when there are no errors
-				return false;
-			}
+			// check format using regex
+			if(!(
+					instruction.matches("([a-zA-Z][a-zA-Z0-9]+\\s*:\\s*)*(LD|SD)\\s+[R](3[0-1]|[1-2][0-9]|[0-9])\\s*,\\s*[0-9][0-9][0-9][0-9][(][R][0-31][)]")|
+					instruction.matches("([a-zA-Z][a-zA-Z0-9]+\\s*:\\s*)*(DADDIU|XORI)\\s+[R](3[0-1]|[1-2][0-9]|[0-9])\\s*,\\s*[R](3[0-1]|[1-2][0-9]|[0-9])\\s*,\\s*[#][0-9][0-9][0-9][0-9]")|
+					instruction.matches("([a-zA-Z][a-zA-Z0-9]+\\s*:\\s*)*(DADDU|SLT)\\s+[R](3[0-1]|[1-2][0-9]|[0-9])\\s*,\\s*[R](3[0-1]|[1-2][0-9]|[0-9])\\s*,\\s*[R](3[0-1]|[1-2][0-9]|[0-9])")|
+					instruction.matches("([a-zA-Z][a-zA-Z0-9]+\\s*:\\s*)*(BLTZC)\\s+[R](3[0-1]|[1-2][0-9]|[0-9])\\s*,\\s*([a-zA-Z][a-zA-Z0-9]*)")|
+					instruction.matches("([a-zA-Z][a-zA-Z0-9]+\\s*:\\s*)*(J)\\s+([a-zA-Z][a-zA-Z0-9]*)")
+					)) {
+				return true;
+			}			
+			// only happens when there are no errors
+			return false;
 		}
 		return true;
 	}
@@ -65,9 +39,11 @@ public class OpcodeConverter {
 			String instruction = codeLines[i];
 			// break down into string array per word, ignoring spaces and commas
 			if(instruction.contains(" ")){
-				String[] ins = instruction.split("\\s*(\\s|,)\\s*");
+				// check for label
+				Pattern pattern = Pattern.compile("([a-zA-Z][a-zA-Z0-9]+\\s*:\\s*)*");
+				String[] ins = instruction.split("(\\s+|,\\s*|\\s*,)");
 				// convert opcode based on instruction using pattern for converting temp elements to binary
-				Pattern pattern = Pattern.compile("\\d+");
+				pattern = Pattern.compile("\\d+");
 				Matcher m;
 				int a;
 				String[] temp = new String[3]; // for parameters
@@ -75,7 +51,7 @@ public class OpcodeConverter {
 				case "LD":
 					opcodeLines[0] = "110111";
 					// parse numbers
-					m = pattern.matcher(ins[1] + ins[2]);
+					m = pattern.matcher(ins[1] + " " + ins[2]);
 					a = 0;
 					while (m.find()) {
 					  temp[a] = m.group();
@@ -90,7 +66,7 @@ public class OpcodeConverter {
 				case "SD":
 					opcodeLines[0] = "111111";
 					// parse numbers
-					m = pattern.matcher(ins[1] + ins[2]);
+					m = pattern.matcher(ins[1] + " " + ins[2]);
 					a = 0;
 					while (m.find()) {
 					  temp[a] = m.group();
@@ -105,7 +81,7 @@ public class OpcodeConverter {
 				case "DADDIU":
 					opcodeLines[0] = "011001";
 					// parse numbers
-					m = pattern.matcher(ins[1] + ins[2] + ins[3]);
+					m = pattern.matcher(ins[1] + " " + ins[2] + " " + ins[3]);
 					a = 0;
 					while (m.find()) {
 					  temp[a] = m.group();
@@ -120,7 +96,7 @@ public class OpcodeConverter {
 				case "XORI":
 					opcodeLines[0] = "001110";
 					// parse numbers
-					m = pattern.matcher(ins[1] + ins[2] + ins[3]);
+					m = pattern.matcher(ins[1] + " " + ins[2] + " " + ins[3]);
 					a = 0;
 					while (m.find()) {
 					  temp[a] = m.group();
@@ -135,7 +111,7 @@ public class OpcodeConverter {
 				case "DADDU":
 					opcodeLines[0] = "000000";
 					// parse numbers
-					m = pattern.matcher(ins[1] + ins[2] + ins[3]);
+					m = pattern.matcher(ins[1] + " " + ins[2] + " " + ins[3]);
 					a = 0;
 					while (m.find()) {
 					  temp[a] = m.group();
@@ -152,7 +128,7 @@ public class OpcodeConverter {
 				case "SLT":
 					opcodeLines[0] = "000000";
 					// parse numbers
-					m = pattern.matcher(ins[1] + ins[2] + ins[3]);
+					m = pattern.matcher(ins[1] + " " + ins[2] + " " + ins[3]);
 					a = 0;
 					while (m.find()) {
 					  temp[a] = m.group();
@@ -206,19 +182,24 @@ public class OpcodeConverter {
 		return in;
 	}
 	
-	public String binaryToHex(String in) {
+	public static String binaryToHex(String in) {
 		// returns 8 digit hex
+		// split into half since java doesnt parse 32 bit binary
+		int mid = in.length() / 2;
+		String[] parts = {in.substring(0, mid), in.substring(mid)};
 		// parse in into base 2, convert to hex, then back to string
-		int temp = Integer.parseInt(in, 2);
-		in = Integer.toHexString(temp);
-		// include leading zeroes
-		if(in.length() < 8) {
-			String zeroes = "";
-			for(int i = 0; i < (8 - in.length()); i++) {
-				zeroes = zeroes + "0";
+		for(int i = 0; i < parts.length; i++){
+			int temp = Integer.parseInt(parts[i], 2);
+			parts[i] = Integer.toHexString(temp);
+			// include leading zeroes
+			if(parts[i].length() < 4) {
+				String zeroes = "";
+				for(int j = 0; j < (4 - parts[i].length()); j++) {
+					zeroes = zeroes + "0";
+				}
+				parts[i] = zeroes + parts[i];
 			}
-			in = zeroes + in;
 		}
-		return in.toUpperCase();
+		return(parts[0] + parts[1]).toUpperCase();
 	}
 }
