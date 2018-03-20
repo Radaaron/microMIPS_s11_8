@@ -10,10 +10,11 @@ import javax.swing.*;
 public class Driver {
 	// main and gui class
 	static String[] codeLines;
-	static ArrayList<String> opcodeList;
+	static CodeObject codeObject;
 	static OpcodeConverter opcodeConverter;
 	
 	public static void main(String[] args) {
+		codeObject = new CodeObject();
 		opcodeConverter = new OpcodeConverter();
 		Scanner a = new Scanner(System.in);
 		JFrame mainFrame = new JFrame();
@@ -34,6 +35,7 @@ public class Driver {
 	    JScrollPane opcodeScrollPane = new JScrollPane(opcodeJList);
 		JButton compileBtn = new JButton("Compile");
 		compileBtn.addActionListener(new ActionListener() {
+			@SuppressWarnings({ "rawtypes", "unchecked" })
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				// get input from codeArea and split into string array, error check
@@ -45,10 +47,10 @@ public class Driver {
 					}
 					else {
 						// no error, get converted opcodeList
-						opcodeList = opcodeConverter.opcodeConvert(codeLines);
+						codeObject = opcodeConverter.opcodeConvert(codeLines);
 						DefaultListModel listModel = new DefaultListModel();
-						for(int i = 0; i < opcodeList.size(); i++) {
-							listModel.addElement(opcodeList.get(i));
+						for(int i = 0; i < codeObject.getOpcodeList().size(); i++) {
+							listModel.addElement(codeObject.getOpcodeList().get(i));
 						}
 						opcodeJList.setModel(listModel);
 					}
