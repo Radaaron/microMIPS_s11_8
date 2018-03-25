@@ -6,12 +6,17 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 
 public class Driver {
 	// main and gui class
 	static String[] codeLines;
 	static CodeObject codeObject;
 	static OpcodeConverter opcodeConverter;
+	static String[] registerColumns = {"Label", "Value"};
+	static String[] memoryColumns = {"Address", "Value"};
+	static String[] pipelineColumns = {"1", "2", "3"};
+	static Object[][] data = {{},{}};
 	
 	public static void main(String[] args) {
 		codeObject = new CodeObject();
@@ -24,8 +29,50 @@ public class Driver {
 		mainFrame.setTitle("microMIPS");
 		mainFrame.setResizable(false);
 		
+		// regs and data splitpane
+		JSplitPane RegDataSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+		DefaultTableModel tableModel = new DefaultTableModel(data, registerColumns) {
+		    @Override
+		    public boolean isCellEditable(int row, int column) {
+		        return false;
+		    }
+		};
+		JTable regTable = new JTable(tableModel);
+		JScrollPane regScrollPane = new JScrollPane(regTable);
+		tableModel = new DefaultTableModel(data, memoryColumns) {
+		    @Override
+		    public boolean isCellEditable(int row, int column) {
+		        return false;
+		    }
+		};
+		JTable memoryTable = new JTable(tableModel);
+		JScrollPane memoryScrollPane = new JScrollPane(memoryTable);
+		RegDataSplitPane.setLeftComponent(regScrollPane);
+		RegDataSplitPane.setRightComponent(memoryScrollPane);
+		
+		// pipeline splitpane
+		JSplitPane pipelineSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+		tableModel = new DefaultTableModel(data, registerColumns) {
+		    @Override
+		    public boolean isCellEditable(int row, int column) {
+		        return false;
+		    }
+		};
+		JTable internalRegTable = new JTable(tableModel);
+		JScrollPane internalRegScrollPane = new JScrollPane(internalRegTable);
+		tableModel = new DefaultTableModel(data, pipelineColumns) {
+		    @Override
+		    public boolean isCellEditable(int row, int column) {
+		        return false;
+		    }
+		};
+		JTable pipeTable = new JTable(tableModel);
+		JScrollPane pipeScrollPane = new JScrollPane(pipeTable);
+		pipelineSplitPane.setLeftComponent(internalRegScrollPane);
+		pipelineSplitPane.setRightComponent(pipeScrollPane);
+		
 		// code and opcodes split pane
-		JSplitPane p1 = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+		JSplitPane codeOpcodeSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
 		JTextArea codeArea = new JTextArea(48, 60);
 		codeArea.setEditable(true);
 		JList opcodeJList = new JList(); //data has type Object[]
@@ -61,18 +108,14 @@ public class Driver {
 	    opcodePane.setLayout(new BoxLayout(opcodePane, BoxLayout.Y_AXIS));		
 	    opcodePane.add(compileBtn);
 		opcodePane.add(opcodeScrollPane);
-		p1.setLeftComponent(codeArea);
-		p1.setRightComponent(opcodePane);
+		codeOpcodeSplitPane.setLeftComponent(codeArea);
+		codeOpcodeSplitPane.setRightComponent(opcodePane);
 		
-		// regs and data pane
-		JPanel p2 = new JPanel();
-		
-		// pipeline pane
-		JPanel p3 = new JPanel();
-		JTabbedPane tabPane =new JTabbedPane();
-		tabPane.addTab("Code & Opcodes", p1);
-		tabPane.addTab("Regs & Data", p2);
-		tabPane.addTab("Pipeline", p3);
+		// construction
+		JTabbedPane tabPane = new JTabbedPane();
+		tabPane.addTab("Code & Opcodes", codeOpcodeSplitPane);
+		tabPane.addTab("Pipeline", pipelineSplitPane);
+		tabPane.addTab("Regs & Data", RegDataSplitPane);
 		mainFrame.add(tabPane);
 		mainFrame.setVisible(true);
 		a.close();
