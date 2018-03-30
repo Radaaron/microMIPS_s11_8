@@ -5,10 +5,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.regex.*;
 
-public class OpcodeConverter {
+public class OpcodeHandler {
 	// converts block of code into corresponding hex opcodes w/ error checking
 	
-	public OpcodeConverter(){}
+	public OpcodeHandler(){}
 	
 	public boolean errorCheck(String[] codeLines) {
 		// return false if error-free
