@@ -16,8 +16,9 @@ public class Driver {
 	static PipelineHandler pipelineHandler;
 	static String[] registerColumns = {"Label", "Value"};
 	static String[] memoryColumns = {"Address", "Value"};
-	static String[] pipelineColumns = {"1"};
+	static String[] pipelineColumns = {"Instruction"};
 	static Object[][] data = {};
+	static int pipelineCycle = 0;
 	
 	public static void main(String[] args) {
 		codeObject = new CodeObject();
@@ -42,7 +43,7 @@ public class Driver {
 		JTable regTable = new JTable(tableModel);
 		tableModel = (DefaultTableModel) regTable.getModel();
 		for(int i = 0; i < 32; i++) {
-			tableModel.addRow(new Object[] {"R" + i, 0});
+			tableModel.addRow(new Object[] {"R" + i, "0000000000000000"});
 		}
 		JScrollPane regScrollPane = new JScrollPane(regTable);
 		tableModel = new DefaultTableModel(data, memoryColumns) {
@@ -54,7 +55,7 @@ public class Driver {
 		JTable memoryTable = new JTable(tableModel);
 		tableModel = (DefaultTableModel) memoryTable.getModel();
 		for(int i = 0; i < 8192; i++) {
-			tableModel.addRow(new Object[] {Integer.toHexString(i), 0});
+			tableModel.addRow(new Object[] {Integer.toHexString(i).toUpperCase(), "00"});
 		}
 		JScrollPane memoryScrollPane = new JScrollPane(memoryTable);
 		RegDataSplitPane.setLeftComponent(regScrollPane);
@@ -86,22 +87,30 @@ public class Driver {
 			@SuppressWarnings({ "rawtypes", "unchecked" })
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				if(codeObject.getOpcodeList().isEmpty()) {
+				if(!codeObject.getOpcodeList().isEmpty()) {
 					// only works if there opcodes exist
-					DefaultTableModel model = (DefaultTableModel) pipeTable.getModel();
-					executePipeline(model, false);	
+					// get table models
+					DefaultTableModel pipeModel = (DefaultTableModel) pipeTable.getModel();
+					DefaultTableModel internalRegModel = (DefaultTableModel) internalRegTable.getModel();
+					DefaultTableModel regModel = (DefaultTableModel) regTable.getModel();
+					DefaultTableModel memoryModel = (DefaultTableModel) memoryTable.getModel();
+					executePipeline(pipeModel, internalRegModel, regModel, memoryModel, true);	
 				}
 			}
 		});
 		JButton fullEx = new JButton("Full Ex");
-		singleStepEx.addActionListener(new ActionListener() {
+		fullEx.addActionListener(new ActionListener() {
 			@SuppressWarnings({ "rawtypes", "unchecked" })
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				if(codeObject.getOpcodeList().isEmpty()) {
+				if(!codeObject.getOpcodeList().isEmpty()) {
 					// only works if there opcodes exist
-					DefaultTableModel model = (DefaultTableModel) pipeTable.getModel();
-					executePipeline(model, true);	
+					// get table models
+					DefaultTableModel pipeModel = (DefaultTableModel) pipeTable.getModel();
+					DefaultTableModel internalRegModel = (DefaultTableModel) internalRegTable.getModel();
+					DefaultTableModel regModel = (DefaultTableModel) regTable.getModel();
+					DefaultTableModel memoryModel = (DefaultTableModel) memoryTable.getModel();
+					executePipeline(pipeModel, internalRegModel, regModel, memoryModel, false);		
 				}
 			}
 		});
@@ -145,6 +154,17 @@ public class Driver {
 							listModel.addElement(codeObject.getOpcodeList().get(i));
 						}
 						opcodeJList.setModel(listModel);
+						// also populate program part of memory
+						DefaultTableModel tableModel = (DefaultTableModel) memoryTable.getModel();
+						for(int i = 4096; i < codeObject.getMemory().length; i++) {
+							tableModel.setValueAt(codeObject.getMemoryValue(i), i, 1);
+						}
+						// and pipeline map
+						tableModel = (DefaultTableModel) pipeTable.getModel();
+						tableModel.setNumRows(0);
+						for(int i = 0; i < codeLines.length; i++) {
+							tableModel.addRow(new Object[]{codeLines[i]});
+						}
 					}
 				}
 			}
@@ -168,32 +188,66 @@ public class Driver {
 
 	// cannot be done through for loop alone
 	public static void fillInternalRegisters(DefaultTableModel model) {
-		model.addRow(new Object[]{"IF/ID.IR", "N/A"});
-		model.addRow(new Object[]{"IF/ID.PC", "N/A"});
-		model.addRow(new Object[]{"ID/EX.IR", "N/A"});
-		model.addRow(new Object[]{"ID/EX.A", "N/A"});
-		model.addRow(new Object[]{"ID/EX.B", "N/A"});
-		model.addRow(new Object[]{"ID/EX.IMM", "N/A"});
-		model.addRow(new Object[]{"EX/MEM.IR", "N/A"});
-		model.addRow(new Object[]{"EX/MEM.ALUOUTPUT", "N/A"});
-		model.addRow(new Object[]{"EX/MEM.B", "N/A"});
-		model.addRow(new Object[]{"EX/MEM.cond", "N/A"});
-		model.addRow(new Object[]{"MEM/WB.IR", "N/A"});
-		model.addRow(new Object[]{"MEM/WB.ALUOUTPUT", "N/A"});
-		model.addRow(new Object[]{"MEM/WB.LMD", "N/A"});
-		model.addRow(new Object[]{"MEM: Actual memory affected", "N/A"});
-		model.addRow(new Object[]{"WB: Registers affected", "N/A"});
+		model.addRow(new Object[]{"IF/ID.IR", "N/A"}); 						// 0
+		model.addRow(new Object[]{"IF/ID.PC", "N/A"}); 						// 1
+		model.addRow(new Object[]{"ID/EX.IR", "N/A"}); 						// 2
+		// hidden: ID.NPC														// 15
+		model.addRow(new Object[]{"ID/EX.A", "N/A"}); 						// 3
+		model.addRow(new Object[]{"ID/EX.B", "N/A"}); 						// 4
+		model.addRow(new Object[]{"ID/EX.IMM", "N/A"}); 					// 5
+		model.addRow(new Object[]{"EX/MEM.IR", "N/A"}); 					// 6
+		// hidden: EX.NPC														// 16
+		model.addRow(new Object[]{"EX/MEM.ALUOUTPUT", "N/A"}); 				// 7
+		model.addRow(new Object[]{"EX/MEM.B", "N/A"}); 						// 8
+		model.addRow(new Object[]{"EX/MEM.cond", "N/A"}); 					// 9
+		model.addRow(new Object[]{"MEM/WB.IR", "N/A"}); 					// 10
+		// hidden: MEM.NPC														// 17
+		model.addRow(new Object[]{"MEM/WB.ALUOUTPUT", "N/A"}); 				// 11
+		model.addRow(new Object[]{"MEM/WB.LMD", "N/A"}); 					// 12
+		model.addRow(new Object[]{"MEM: Actual memory affected", "N/A"}); 	// 13
+		// hidden: WB.NPC														// 18
+		model.addRow(new Object[]{"WB: Registers affected", "N/A"}); 		// 14
 	}
 
-	public static void executePipeline(DefaultTableModel model, boolean fullEx) {
-		// while there unprocessed opcodes
-		while(codeObject.getOpcodeList().size() != codeObject.getFinishedList().size()) {
-			// working backwards to work around dependencies
+	public static void executePipeline(DefaultTableModel pipeModel, DefaultTableModel internalRegModel, DefaultTableModel regModel, DefaultTableModel memoryModel, boolean singleStep) {
+		while(!codeObject.isFinished()) {
+			// process backwards to work around dependencies
 			// WB
-			
+			codeObject = pipelineHandler.WBstage(codeObject);
 			// MEM
+			codeObject = pipelineHandler.MEMstage(codeObject);	
+			// EX
+			codeObject = pipelineHandler.EXstage(codeObject);
 			// ID
+			codeObject = pipelineHandler.IDstage(codeObject);
 			// IF
+			codeObject = pipelineHandler.IFstage(codeObject);
+			// update tables
+			// pipeline map
+			pipelineCycle++;
+			pipeModel.addColumn(pipelineCycle, pipelineHandler.getCycleInfo(codeObject));
+			// internal pipeline registers
+			for(int i = 0; i < 15; i++) {
+				internalRegModel.setValueAt(codeObject.getPipelineRegisterValue(i), i, 1);
+			}
+			// registers
+			for(int i = 0; i < codeObject.getRegisters().length; i++) {
+				regModel.setValueAt(codeObject.getRegisterValue(i), i, 1);
+			}
+			// memory
+			for(int i = 0; i < codeObject.getMemory().length; i++) {
+				memoryModel.setValueAt(codeObject.getMemoryValue(i), i, 1);
+			}
+			if(singleStep) {
+				break;
+			}
 		}
+	}
+	
+	public static void printPipeline(CodeObject codeObject) {
+		for (Object name : codeObject.getPipelineRegisters()) {
+			System.out.println(name);
+		}
+		System.out.println("---------------------");
 	}
 }

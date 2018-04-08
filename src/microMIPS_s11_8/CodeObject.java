@@ -1,6 +1,7 @@
 package microMIPS_s11_8;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class CodeObject {
@@ -9,40 +10,67 @@ public class CodeObject {
 	// fields
 	private ArrayList<String> opcodeList;
 	private int numLines;
-	private ArrayList<HashMap<String, Integer>> labelPointers;
+	private HashMap<String, Integer> labelMap;
 	private Object[] registers;
 	private Object[] memory;
 	private Object[] pipelineRegisters;
 	private ArrayList<ArrayList<Object>> pipelineMap;
-	private ArrayList<String> processingList;
-	private ArrayList<String> finishedList;
+	private int programCounter;
+	private boolean isFinished;
+	private boolean isStarted;
 	
 	public CodeObject() {
 		this.opcodeList = new ArrayList<>();
 		this.numLines = 0;
-		this.labelPointers = new ArrayList<>();
+		this.labelMap = new HashMap<>();
 		this.registers = new Object[32];
+		for(int i = 0; i< registers.length; i++) {
+			this.registers[i] = 0;
+		}
 		this.memory = new Object[8192];
-		this.pipelineRegisters = new Object[15];
+		for(int i = 0; i< memory.length; i++) {
+			this.memory[i] = "00";
+		}
+		this.pipelineRegisters = new Object[19];
+		for(int i = 0; i< pipelineRegisters.length; i++) {
+			this.pipelineRegisters[i] = "N/A";
+		}
 		this.pipelineMap = new ArrayList<>();
-		this.processingList = new ArrayList<>();
-		this.finishedList = new ArrayList<>();
-	}
-
-	public ArrayList<String> getFinishedList() {
-		return finishedList;
-	}
-
-	public void addToFinishedList(String opcode) {
-		this.finishedList.add(opcode);
+		this.programCounter = 4096; // start at 0x01000
+		this.isFinished = false;
+		this.isStarted = false;
 	}
 	
-	public ArrayList<String> getProcessingList() {
-		return processingList;
+	public boolean isFinished() {
+		return this.isFinished;
+	}
+	
+	public void setFinished() {
+		this.isFinished = true;
+	}
+	
+	public boolean isStarted() {
+		return this.isStarted;
+	}
+	
+	public void setStarted() {
+		this.isStarted = true;
+	}
+	
+	public String getNextInstruction() {
+		String ins = "";
+		for(int i = this.programCounter; i < this.programCounter + 4; i++) {
+			ins = this.memory[i] + ins;
+		}
+		return ins;
 	}
 
-	public void addToProcessingList(String opcode) {
-		this.processingList.add(opcode);
+	public int getProgramCounter() {
+		return programCounter;
+	}
+
+	public void setProgramCounter(int programCounter) {
+		this.programCounter = programCounter;
 	}
 
 	public Object getPipelineMapValue(int index) {
@@ -85,8 +113,24 @@ public class CodeObject {
 		return this.memory;
 	}
 	
-	public void setMemoryValue(int index, Object val) {
-		this.memory[index] = val;
+	public void storeInMemory(int index, String val) { // just used for store
+		if (val.length() % 2 == 1) {
+			// odd
+			val = "0" + val;
+		} 
+		for(int j = val.length(); j > 0; j--) {
+			this.memory[index] = val.substring(j - 2, j);
+			j--;
+			index++;
+		}
+	}
+	
+	public String loadFromMemory(int index) { // just used for load
+		String load = null;
+		for(int i = index; i < index + 8; i++) {
+			load = this.memory[index] + load;
+		}
+		return load;
 	}
 
 	public ArrayList<String> getOpcodeList() {
@@ -95,6 +139,15 @@ public class CodeObject {
 
 	public void setOpcodeList(ArrayList<String> opcodeList) {
 		this.opcodeList = opcodeList;
+		// add the opcode instructions to memory as well
+		int k = 4096;
+		for(int i = 0; i < this.opcodeList.size(); i++) {
+			for(int j = 8; j > 0; j--) {
+				this.memory[k] = this.opcodeList.get(i).substring(j - 2, j);
+				j--;
+				k++;
+			}
+		}
 	}
 
 	public int getNumLines() {
@@ -105,12 +158,12 @@ public class CodeObject {
 		this.numLines = numLines;
 	}
 
-	public ArrayList<HashMap<String, Integer>> getLabelPointers() {
-		return labelPointers;
+	public HashMap<String, Integer> getLabelMap() {
+		return this.labelMap;
 	}
 
-	public void setLabelPointers(ArrayList<HashMap<String, Integer>> labelPointers) {
-		this.labelPointers = labelPointers;
+	public void setLabelMap(HashMap<String, Integer> labelMap) {
+		this.labelMap = labelMap;
 	}
 	
 	
