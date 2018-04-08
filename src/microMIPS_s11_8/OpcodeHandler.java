@@ -21,11 +21,11 @@ public class OpcodeHandler {
 			String instruction = codeLines[i];
 			// check format using regex
 			if(!(
-					instruction.matches("([a-zA-Z][a-zA-Z0-9]+\\s*:\\s*)*(LD|SD)\\s+[R](3[0-1]|[1-2][0-9]|[0-9])\\s*,\\s*[0-9][0-9][0-9][0-9][(][R][0-31][)]")|
-					instruction.matches("([a-zA-Z][a-zA-Z0-9]+\\s*:\\s*)*(DADDIU|XORI)\\s+[R](3[0-1]|[1-2][0-9]|[0-9])\\s*,\\s*[R](3[0-1]|[1-2][0-9]|[0-9])\\s*,\\s*[#]([0-9][0-9][0-9][0-9]|[0-9][0-9][0-9]|[0-9][0-9]|[0-9])")|
-					instruction.matches("([a-zA-Z][a-zA-Z0-9]+\\s*:\\s*)*(DADDU|SLT)\\s+[R](3[0-1]|[1-2][0-9]|[0-9])\\s*,\\s*[R](3[0-1]|[1-2][0-9]|[0-9])\\s*,\\s*[R](3[0-1]|[1-2][0-9]|[0-9])")|
-					instruction.matches("([a-zA-Z][a-zA-Z0-9]+\\s*:\\s*)*(BLTZC)\\s+[R](3[0-1]|[1-2][0-9]|[1-9])\\s*,\\s*([a-zA-Z][a-zA-Z0-9]*)+")|
-					instruction.matches("([a-zA-Z][a-zA-Z0-9]+\\s*:\\s*)*(J)\\s+([a-zA-Z][a-zA-Z0-9]*)+")
+					instruction.matches("(([a-zA-Z][a-zA-Z0-9]+\\s*:\\s*)*(LD|SD)\\s+[R](3[0-1]|[1-2][0-9]|[0-9])\\s*,\\s*[0-9][0-9][0-9][0-9][(][R][0-31][)])$")|
+					instruction.matches("(([a-zA-Z][a-zA-Z0-9]+\\s*:\\s*)*(DADDIU|XORI)\\s+[R](3[0-1]|[1-2][0-9]|[0-9])\\s*,\\s*[R](3[0-1]|[1-2][0-9]|[0-9])\\s*,\\s*[#]([0-9A-F][0-9A-F][0-9A-F][0-9A-F]|[0-9A-F][0-9A-F][0-9A-F]|[0-9A-F][0-9A-F]|[0-9A-F]))$")|
+					instruction.matches("(([a-zA-Z][a-zA-Z0-9]+\\s*:\\s*)*(DADDU|SLT)\\s+[R](3[0-1]|[1-2][0-9]|[0-9])\\s*,\\s*[R](3[0-1]|[1-2][0-9]|[0-9])\\s*,\\s*[R](3[0-1]|[1-2][0-9]|[0-9]))$")|
+					instruction.matches("(([a-zA-Z][a-zA-Z0-9]+\\s*:\\s*)*(BLTZC)\\s+[R](3[0-1]|[1-2][0-9]|[1-9])\\s*,\\s*([a-zA-Z][a-zA-Z0-9]*)+)$")|
+					instruction.matches("(([a-zA-Z][a-zA-Z0-9]+\\s*:\\s*)*(J)\\s+([a-zA-Z][a-zA-Z0-9]*)+)$")
 					)) {
 				return true;
 			}			
@@ -67,7 +67,7 @@ public class OpcodeHandler {
 				// split instruction based on spaces and commas where appropriate
 				String[] ins = instruction.split("(\\s+|,\\s*|\\s*,)");
 				// convert opcode based on instruction using pattern for converting temp elements to binary
-				pattern = Pattern.compile("\\d+");
+				pattern = Pattern.compile("\\d+|([0-9A-F][0-9A-F][0-9A-F][0-9A-F]|[0-9A-F][0-9A-F][0-9A-F]|[0-9A-F][0-9A-F]|[0-9A-F])");
 				int a;
 				String[] temp = new String[3]; // for parameters
 				switch(ins[0]) {

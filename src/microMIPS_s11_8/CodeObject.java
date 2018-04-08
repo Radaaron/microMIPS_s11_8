@@ -25,7 +25,7 @@ public class CodeObject {
 		this.labelMap = new HashMap<>();
 		this.registers = new Object[32];
 		for(int i = 0; i< registers.length; i++) {
-			this.registers[i] = 0;
+			this.registers[i] = "0000000000000000";
 		}
 		this.memory = new Object[8192];
 		for(int i = 0; i< memory.length; i++) {

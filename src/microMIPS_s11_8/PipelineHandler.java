@@ -53,10 +53,10 @@ public class PipelineHandler {
 		String opcode = (String) codeObject.getPipelineRegisterValue(2);
 		opcode = converter.hexToBinary(opcode, 32); // convert to binary
 		// ID/EX.A <- Regs[IF/ID.IR6...10]
-		codeObject.setPipelineRegisterValue(3, Integer.toHexString((Integer) codeObject.getRegisterValue(Integer.parseInt(opcode.substring(6, 11), 2))));
+		codeObject.setPipelineRegisterValue(3, codeObject.getRegisterValue(Integer.parseInt(opcode.substring(6, 11), 2)));
 		// ID/EX.B <- Regs[IF/ID.IR11...15]
-		codeObject.setPipelineRegisterValue(4, Integer.toHexString((Integer) codeObject.getRegisterValue(Integer.parseInt(opcode.substring(11, 16), 2))));
-		// ID/EX.Imm <- Regs[IF/ID.IR16...31]
+		codeObject.setPipelineRegisterValue(4, codeObject.getRegisterValue(Integer.parseInt(opcode.substring(11, 16), 2)));
+		// ID/EX.Imm <- IF/ID.IR16...31
 		codeObject.setPipelineRegisterValue(5, Integer.toHexString((Integer.parseInt(opcode.substring(16, opcode.length()), 2))));
 		// HIDDEN: ID.NPC <- // IF/ID.PC
 		codeObject.setPipelineRegisterValue(15, codeObject.getPipelineRegisterValue(1));
@@ -223,22 +223,22 @@ public class PipelineHandler {
 		switch(opcode.substring(0, 6)) {
 		case "110111": // LD
 			// Regs[MEM/WB.IR11...15] <- MEM/WB.LMD
-			codeObject.setRegisterValue(Integer.parseInt(opcode.substring(11, 16), 2), signExtend((String) codeObject.getPipelineRegisterValue(12)));
+			codeObject.setRegisterValue(Integer.parseInt(opcode.substring(11, 16), 2), signExtend(((String) codeObject.getPipelineRegisterValue(12)).toUpperCase()));
 			;break;
 		case "111111": // SD
 			// nothing
 			;break;
 		case "011001": // DADDIU
 			// Regs[MEM/WB.IR11...15] <- MEM/WB.ALUOUTPUT
-			codeObject.setRegisterValue(Integer.parseInt(opcode.substring(11, 16), 2), signExtend((String) codeObject.getPipelineRegisterValue(11)));
+			codeObject.setRegisterValue(Integer.parseInt(opcode.substring(11, 16), 2), signExtend(((String) codeObject.getPipelineRegisterValue(11)).toUpperCase()));
 			;break;
 		case "001110": // XORI
 			// Regs[MEM/WB.IR11...15] <- MEM/WB.ALUOUTPUT
-			codeObject.setRegisterValue(Integer.parseInt(opcode.substring(11, 16), 2), signExtend((String) codeObject.getPipelineRegisterValue(11)));
+			codeObject.setRegisterValue(Integer.parseInt(opcode.substring(11, 16), 2), signExtend(((String) codeObject.getPipelineRegisterValue(11)).toUpperCase()));
 			;break;
 		case "000000": // DADDU or SLT
 			// Regs[MEM/WB.IR16...20] <- MEM/WB.ALUOUTPUT
-			codeObject.setRegisterValue(Integer.parseInt(opcode.substring(16, 21), 2), signExtend((String) codeObject.getPipelineRegisterValue(11)));
+			codeObject.setRegisterValue(Integer.parseInt(opcode.substring(16, 21), 2), signExtend(((String) codeObject.getPipelineRegisterValue(11)).toUpperCase()));
 			;break;
 		case "010111": // BLTZC
 			// nothing

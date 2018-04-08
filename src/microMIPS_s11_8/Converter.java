@@ -25,19 +25,23 @@ public class Converter {
 	}
 	
 	public String hexToBinary(String in, int n) {
-		// returns 16 bit binary with leading zeroes
-		// parse in into base 16, convert to binary, then back to string
-		int temp = Integer.parseInt(in, 16);
-		in = Integer.toBinaryString(temp);
-		// include leading zeroes
-		if(in.length() < n) {
-			String zeroes = "";
-			for(int i = 0; i < (n - in.length()); i++) {
-				zeroes = zeroes + "0";
+		// split into half since java doesnt parse into 32 bit binary
+		int mid = in.length() / 2;
+		String[] parts = {in.substring(0, mid), in.substring(mid)};
+		// parse in into base 2, then back to string
+		for(int i = 0; i < parts.length; i++){
+			int temp = Integer.parseInt(parts[i], 16);
+			parts[i] = Integer.toBinaryString(temp);
+			// include leading zeroes
+			if(parts[i].length() < n/2) {
+				String zeroes = "";
+				for(int j = 0; j < (n/2 - parts[i].length()); j++) {
+					zeroes = zeroes + "0";
+				}
+				parts[i] = zeroes + parts[i];
 			}
-			in = zeroes + in;
 		}
-		return in;
+		return parts[0] + parts[1];
 	}
 	
 	public String binaryToHex(String in) {
