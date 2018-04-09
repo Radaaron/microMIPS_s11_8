@@ -7,6 +7,7 @@ import java.awt.event.ActionListener;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
 
 public class Driver {
 	// main and gui class
@@ -58,7 +59,34 @@ public class Driver {
 			tableModel.addRow(new Object[] {Integer.toHexString(i).toUpperCase(), "00"});
 		}
 		JScrollPane memoryScrollPane = new JScrollPane(memoryTable);
-		RegDataSplitPane.setLeftComponent(regScrollPane);
+		JToolBar memorySearchToolBar = new JToolBar();
+		memorySearchToolBar.setFloatable(false);
+		memorySearchToolBar.setRollover(true);
+		JLabel gotoLabel = new JLabel("  GOTO: ");
+		JTextArea searchTextArea = new JTextArea();
+		searchTextArea.setLineWrap(true);
+		JButton searchBtn = new JButton("Search");
+		searchBtn.addActionListener(new ActionListener() {
+			@SuppressWarnings({ "rawtypes", "unchecked" })
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				TableRowSorter sorter = new TableRowSorter((DefaultTableModel) memoryTable.getModel());
+				memoryTable.setRowSorter(sorter);
+				sorter.setRowFilter(RowFilter.regexFilter(searchTextArea.getText()));
+			}
+		});
+		memorySearchToolBar.add(gotoLabel);
+		memorySearchToolBar.addSeparator();
+		memorySearchToolBar.add(searchTextArea);
+		memorySearchToolBar.addSeparator();
+		memorySearchToolBar.add(searchBtn);
+		JPanel toolBarPane = new JPanel();
+		toolBarPane.add(memorySearchToolBar);
+		JPanel registerGOTOPane = new JPanel();
+		registerGOTOPane.setLayout(new BoxLayout(registerGOTOPane, BoxLayout.Y_AXIS));
+		registerGOTOPane.add(regScrollPane);
+		registerGOTOPane.add(toolBarPane);
+		RegDataSplitPane.setLeftComponent(registerGOTOPane);
 		RegDataSplitPane.setRightComponent(memoryScrollPane);
 		
 		// pipeline splitpane
