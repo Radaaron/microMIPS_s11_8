@@ -117,7 +117,7 @@ public class PipelineHandler {
 		case "000000": // DADDU or SLT
 			// EX/MEM.ALUOUTPUT <- ID/EX.A func ID/EX.B
 			// check func
-			switch(opcode.substring(25, opcode.length())) {
+			switch(opcode.substring(26, opcode.length())) {
 			case "101101": // DADDU
 				codeObject.setPipelineRegisterValue(7, Integer.toHexString(Integer.parseInt((String) codeObject.getPipelineRegisterValue(3), 16)
 						+ Integer.parseInt((String) codeObject.getPipelineRegisterValue(4), 16)));
@@ -166,7 +166,6 @@ public class PipelineHandler {
 			codeObject.setPipelineRegisterValue(10, "N/A");
 			codeObject.setPipelineRegisterValue(11, "N/A");
 			codeObject.setPipelineRegisterValue(12, "N/A");
-			codeObject.setPipelineRegisterValue(13, "N/A");
 			if(((String) codeObject.getPipelineRegisterValue(16)).equals("0")) {
 				codeObject.setPipelineRegisterValue(17, "0");
 				codeObject.setFinished();
@@ -186,6 +185,9 @@ public class PipelineHandler {
 		case "111111": // SD
 			// Mem[EX/MEM.ALUOUTPUT] <- EX/MEM.B
 			codeObject.storeInMemory(Integer.parseInt((String) codeObject.getPipelineRegisterValue(7), 16), (String) codeObject.getPipelineRegisterValue(8));
+			// MEM: Actual memory affected <- EX/MEM.B " - " EX/MEM.B + 7 (8 memory spaces for a dword)
+			codeObject.setPipelineRegisterValue(13, (String) codeObject.getPipelineRegisterValue(7) + " - " 
+					+ Integer.toHexString(Integer.parseInt((String) codeObject.getPipelineRegisterValue(7), 16) + 7));
 			;break;
 		case "011001": // DADDIU
 			// MEM/WB.ALUOUTPUT <- EX/MEM.ALUOUTPUT
@@ -224,6 +226,8 @@ public class PipelineHandler {
 		case "110111": // LD
 			// Regs[MEM/WB.IR11...15] <- MEM/WB.LMD
 			codeObject.setRegisterValue(Integer.parseInt(opcode.substring(11, 16), 2), signExtend(((String) codeObject.getPipelineRegisterValue(12)).toUpperCase()));
+			// WB: Registers affected <- Register used
+			codeObject.setPipelineRegisterValue(14, "R" + Integer.parseInt(opcode.substring(11, 16), 2));
 			;break;
 		case "111111": // SD
 			// nothing
@@ -231,14 +235,20 @@ public class PipelineHandler {
 		case "011001": // DADDIU
 			// Regs[MEM/WB.IR11...15] <- MEM/WB.ALUOUTPUT
 			codeObject.setRegisterValue(Integer.parseInt(opcode.substring(11, 16), 2), signExtend(((String) codeObject.getPipelineRegisterValue(11)).toUpperCase()));
+			// WB: Registers affected <- Register used
+			codeObject.setPipelineRegisterValue(14, "R" + Integer.parseInt(opcode.substring(11, 16), 2));
 			;break;
 		case "001110": // XORI
 			// Regs[MEM/WB.IR11...15] <- MEM/WB.ALUOUTPUT
 			codeObject.setRegisterValue(Integer.parseInt(opcode.substring(11, 16), 2), signExtend(((String) codeObject.getPipelineRegisterValue(11)).toUpperCase()));
+			// WB: Registers affected <- Register used
+			codeObject.setPipelineRegisterValue(14, "R" + Integer.parseInt(opcode.substring(11, 16), 2));
 			;break;
 		case "000000": // DADDU or SLT
 			// Regs[MEM/WB.IR16...20] <- MEM/WB.ALUOUTPUT
 			codeObject.setRegisterValue(Integer.parseInt(opcode.substring(16, 21), 2), signExtend(((String) codeObject.getPipelineRegisterValue(11)).toUpperCase()));
+			// WB: Registers affected <- Register used
+			codeObject.setPipelineRegisterValue(14, "R" + Integer.parseInt(opcode.substring(16, 21), 2));
 			;break;
 		case "010111": // BLTZC
 			// nothing

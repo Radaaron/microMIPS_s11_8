@@ -1,5 +1,6 @@
 package microMIPS_s11_8;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -126,9 +127,9 @@ public class CodeObject {
 	}
 	
 	public String loadFromMemory(int index) { // just used for load
-		String load = null;
+		String load = "";
 		for(int i = index; i < index + 8; i++) {
-			load = this.memory[index] + load;
+			load = this.memory[i] + load;
 		}
 		return load;
 	}

@@ -104,7 +104,8 @@ public class OpcodeHandler {
 				case "DADDIU":
 					opcodeLines[0] = "011001";
 					// parse numbers
-					m = pattern.matcher(ins[1] + " " + ins[2] + " " + ins[3]);
+					System.out.println();
+					m = pattern.matcher(ins[1] + " " + ins[2]);
 					a = 0;
 					while (m.find()) {
 						temp[a] = m.group();
@@ -113,13 +114,21 @@ public class OpcodeHandler {
 					// convert to binary as needed
 					opcodeLines[1] = converter.decimalToBinary(temp[1], 5); // rs
 					opcodeLines[2] = converter.decimalToBinary(temp[0], 5); // rt
-					opcodeLines[3] = converter.hexToBinary(temp[2], 16); // immediate
+					// different pattern for immediate
+					pattern = Pattern.compile("([0-9A-F][0-9A-F][0-9A-F][0-9A-F]|[0-9A-F][0-9A-F][0-9A-F]|[0-9A-F][0-9A-F]|[0-9A-F])");
+					m = pattern.matcher(ins[3]);
+					a = 0;
+					while (m.find()) {
+						temp[a] = m.group();
+						a++;
+					}
+					opcodeLines[3] = converter.hexToBinary(temp[0], 16); // immediate
 					opcodeList.add(converter.binaryToHex(opcodeLines[0] + opcodeLines[1] + opcodeLines[2] + opcodeLines[3]));
 					;break;
 				case "XORI":
 					opcodeLines[0] = "001110";
 					// parse numbers
-					m = pattern.matcher(ins[1] + " " + ins[2] + " " + ins[3]);
+					m = pattern.matcher(ins[1] + " " + ins[2]);
 					a = 0;
 					while (m.find()) {
 						temp[a] = m.group();
@@ -128,7 +137,15 @@ public class OpcodeHandler {
 					// convert to binary as needed
 					opcodeLines[1] = converter.decimalToBinary(temp[1], 5); // rs
 					opcodeLines[2] = converter.decimalToBinary(temp[0], 5); // rt
-					opcodeLines[3] = converter.hexToBinary(temp[2], 16); // immediate
+					// different pattern for immediate
+					pattern = Pattern.compile("([0-9A-F][0-9A-F][0-9A-F][0-9A-F]|[0-9A-F][0-9A-F][0-9A-F]|[0-9A-F][0-9A-F]|[0-9A-F])");
+					m = pattern.matcher(ins[3]);
+					a = 0;
+					while (m.find()) {
+						temp[a] = m.group();
+						a++;
+					}
+					opcodeLines[3] = converter.hexToBinary(temp[0], 16); // immediate
 					opcodeList.add(converter.binaryToHex(opcodeLines[0] + opcodeLines[1] + opcodeLines[2] + opcodeLines[3]));
 					;break;
 				case "DADDU":
