@@ -240,6 +240,7 @@ public class Driver {
 
 	public static void executePipeline(DefaultTableModel pipeModel, DefaultTableModel internalRegModel, DefaultTableModel regModel, DefaultTableModel memoryModel, boolean singleStep) {
 		while(!codeObject.isFinished()) {
+			System.out.println("Cycle: " + (pipelineCycle + 1));
 			// move internal registers to buffers for next use
 			for(int i = 0; i < codeObject.getPipelineRegisters().length; i++) {
 				codeObject.setPipelineBufferValue(i, codeObject.getPipelineRegisterValue(i));

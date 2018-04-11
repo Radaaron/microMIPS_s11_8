@@ -7,46 +7,107 @@ public class PipelineHandler {
 	// handles the pipeline processing for each stage
 	
 	private Converter converter;
-	private boolean isStalled = false;
-	private int stall = -1;
+	private boolean stalled = false;
+	private String stallIR = "";
+	private int stallNPC = -1;
 	
 	public PipelineHandler(){
 		converter = new Converter();
 	}
 	
+	public void stall(String ir, int npc) {
+		// reset
+		stalled = true;
+		stallIR = ir;
+		stallNPC = npc;
+	}
+	
+	public void resetStall() {
+		// reset
+		stalled = false;
+		stallIR = "";
+		stallNPC = -1;
+	}
+	
 	public CodeObject IFstage(CodeObject codeObject) {
-		// IF/ID.IR <- Mem[PC]
-		String opcode = codeObject.getInstruction();
-		if(opcode.equals("00000000")) { // last instruction
-			// reset values
-			codeObject.setPipelineRegisterValue(0, "N/A");
-			codeObject.setPipelineRegisterValue(1, "N/A");
-			return codeObject;
+		String opcode = null;
+		if(stalled) {
+			System.out.println("STALLED");
+			// keep take stalled IR and keep program counter the same
+			opcode = stallIR;
+			codeObject.setPipelineRegisterValue(1, Integer.toHexString(stallNPC));
+		}
+		else {
+			// IF/ID.IR <- Mem[PC]
+			opcode = codeObject.getInstruction();
+			if(opcode.equals("00000000")) { // last instruction
+				// reset values
+				codeObject.setPipelineRegisterValue(0, "N/A");
+				codeObject.setPipelineRegisterValue(1, "N/A");
+				return codeObject;
+			}
+			// PC + 4
+			codeObject.setProgramCounter(codeObject.getProgramCounter() + 4);
+			codeObject.setPipelineRegisterValue(1, Integer.toHexString(codeObject.getProgramCounter()));
+			stallIR = opcode; // store opcode in case of stalling
 		}
 		codeObject.setPipelineRegisterValue(0, opcode);
 		opcode = converter.hexToBinary(opcode, 32); // convert to binary
-		// check if branch type
-		if((opcode.substring(0, 6).equals("010111") || opcode.substring(0, 6).equals("000010"))) {
-			// set next npc as reference for stalls in pipeline freeze
-			stall = codeObject.getProgramCounter() + 8;
-		}
-		// IF/ID.PC <- (if(EX/MEM.cond{EX/MEM.ALUOUTPUT} else {PC+4}))
+		// IF/ID.PC <- (if(EX/MEM.cond{EX/MEM.ALUOUTPUT} else retain))
 		if(((String)codeObject.getPipelineBufferValue(9)).equals("1")) {
 			codeObject.setProgramCounter(Integer.parseInt((String) codeObject.getPipelineBufferValue(7), 16));
 			codeObject.setPipelineRegisterValue(1, Integer.toHexString(Integer.parseInt((String) codeObject.getPipelineBufferValue(7), 16)));
 		}
-		else {
-			if(!isStalled) {
-				codeObject.setProgramCounter(codeObject.getProgramCounter() + 4);
+		// check for data hazards by checking if operands are being used (RAW and WAW) and if not, set destination register as used
+		switch(opcode.substring(0, 6)) {
+		case "110111": // LD
+			if(codeObject.getRegistersUsedValue(Integer.parseInt(opcode.substring(6, 11), 2)) || codeObject.getRegistersUsedValue(Integer.parseInt(opcode.substring(11, 16), 2))){
+				stall(stallIR, codeObject.getProgramCounter());
+				return codeObject;
 			}
-			codeObject.setPipelineRegisterValue(1, Integer.toHexString(codeObject.getProgramCounter()));
+			codeObject.setRegistersUsedValue(Integer.parseInt(opcode.substring(11, 16), 2), true);
+			;break;
+		case "111111": // SD
+			if(codeObject.getRegistersUsedValue(Integer.parseInt(opcode.substring(6, 11), 2)) || codeObject.getRegistersUsedValue(Integer.parseInt(opcode.substring(11, 16), 2))){
+				stall(stallIR, codeObject.getProgramCounter());
+				return codeObject;
+			}
+			codeObject.setRegistersUsedValue(Integer.parseInt(opcode.substring(11, 16), 2), true);
+			;break;
+		case "011001": // DADDIU
+			if(codeObject.getRegistersUsedValue(Integer.parseInt(opcode.substring(6, 11), 2)) || codeObject.getRegistersUsedValue(Integer.parseInt(opcode.substring(11, 16), 2))){
+				stall(stallIR, codeObject.getProgramCounter());
+				return codeObject;
+			}
+			codeObject.setRegistersUsedValue(Integer.parseInt(opcode.substring(11, 16), 2), true);
+			;break;
+		case "001110": // XORI
+			if(codeObject.getRegistersUsedValue(Integer.parseInt(opcode.substring(6, 11), 2)) || codeObject.getRegistersUsedValue(Integer.parseInt(opcode.substring(11, 16), 2))){
+				stall(stallIR, codeObject.getProgramCounter());
+				return codeObject;
+			}
+			codeObject.setRegistersUsedValue(Integer.parseInt(opcode.substring(11, 16), 2), true);
+			;break;
+		case "000000": // DADDU or SLT
+			if(codeObject.getRegistersUsedValue(Integer.parseInt(opcode.substring(6, 11), 2)) || codeObject.getRegistersUsedValue(Integer.parseInt(opcode.substring(11, 16), 2)) || codeObject.getRegistersUsedValue(Integer.parseInt(opcode.substring(16, 21), 2))){
+				stall(stallIR, codeObject.getProgramCounter());
+				return codeObject;
+			}
+			codeObject.setRegistersUsedValue(Integer.parseInt(opcode.substring(16, 21), 2), true);
+			;break;
+		case "010111": // BLTZC
+			if(codeObject.getRegistersUsedValue(Integer.parseInt(opcode.substring(6, 11), 2))){
+				stall(stallIR, codeObject.getProgramCounter());
+				return codeObject;
+			}
+			codeObject.setRegistersUsedValue(Integer.parseInt(opcode.substring(6, 11), 2), true);
+			;break;
 		}
 		codeObject.setStarted();
 		return codeObject;
 	}
 	
 	public CodeObject IDstage(CodeObject codeObject) {
-		// TODO detect data hazard for stalling
 		if(((String) codeObject.getPipelineBufferValue(0)).equals("N/A")) {
 			codeObject.setPipelineRegisterValue(2, "N/A");
 			codeObject.setPipelineRegisterValue(3, "N/A");
@@ -56,6 +117,14 @@ public class PipelineHandler {
 				codeObject.setPipelineRegisterValue(15, "0");
 			}
 			return codeObject;
+		}
+		// check if IF is stalled
+		if(stalled) {
+			// check if instruction to be ID is the stalled instruction
+			if(Integer.parseInt((String) codeObject.getPipelineBufferValue(1), 16) == stallNPC) {
+				codeObject.setPipelineRegisterValue(15, "0");
+				return codeObject;	
+			}
 		}
 		// ID/EX.IR <- IF/ID.IR
 		String opcode = (String) codeObject.setPipelineRegisterValue(2, codeObject.getPipelineBufferValue(0));
@@ -158,7 +227,7 @@ public class PipelineHandler {
 					+ Integer.parseInt((String) codeObject.getPipelineBufferValue(4), 16)
 					+ Integer.parseInt((String) codeObject.getPipelineBufferValue(5), 16);
 			immediate = immediate << 2;
-			codeObject.setPipelineRegisterValue(7, Integer.toHexString(immediate));
+			codeObject.setPipelineRegisterValue(7, Integer.toHexString(immediate + 4096));
 			// EX/MEM.Cond <- 1
 			codeObject.setPipelineRegisterValue(9, "1");
 			;break;
@@ -207,10 +276,8 @@ public class PipelineHandler {
 			codeObject.setPipelineRegisterValue(11, codeObject.getPipelineBufferValue(7));
 			;break;
 		case "010111": // BLTZC
-			// nothing
 			;break;
 		case "000010": // J
-			// nothing
 		}
 		// HIDDEN: MEM.NPC <- EX.NPC
 		codeObject.setPipelineRegisterValue(17, codeObject.getPipelineBufferValue(16));
@@ -233,8 +300,12 @@ public class PipelineHandler {
 			codeObject.setRegisterValue(Integer.parseInt(opcode.substring(11, 16), 2), signExtend(((String) codeObject.getPipelineBufferValue(12)).toUpperCase()));
 			// WB: Registers affected <- Register used
 			codeObject.setPipelineRegisterValue(14, "R" + Integer.parseInt(opcode.substring(11, 16), 2));
+			codeObject.setRegistersUsedValue(Integer.parseInt(opcode.substring(11, 16), 2), false);
+			resetStall();
 			;break;
 		case "111111": // SD
+			codeObject.setRegistersUsedValue(Integer.parseInt(opcode.substring(11, 16), 2), false);
+			resetStall();
 			// nothing
 			;break;
 		case "011001": // DADDIU
@@ -242,21 +313,28 @@ public class PipelineHandler {
 			codeObject.setRegisterValue(Integer.parseInt(opcode.substring(11, 16), 2), signExtend(((String) codeObject.getPipelineBufferValue(11)).toUpperCase()));
 			// WB: Registers affected <- Register used
 			codeObject.setPipelineRegisterValue(14, "R" + Integer.parseInt(opcode.substring(11, 16), 2));
+			codeObject.setRegistersUsedValue(Integer.parseInt(opcode.substring(11, 16), 2), false);
+			resetStall();
 			;break;
 		case "001110": // XORI
 			// Regs[MEM/WB.IR11...15] <- MEM/WB.ALUOUTPUT
 			codeObject.setRegisterValue(Integer.parseInt(opcode.substring(11, 16), 2), signExtend(((String) codeObject.getPipelineBufferValue(11)).toUpperCase()));
 			// WB: Registers affected <- Register used
 			codeObject.setPipelineRegisterValue(14, "R" + Integer.parseInt(opcode.substring(11, 16), 2));
+			codeObject.setRegistersUsedValue(Integer.parseInt(opcode.substring(11, 16), 2), false);
+			resetStall();
 			;break;
 		case "000000": // DADDU or SLT
 			// Regs[MEM/WB.IR16...20] <- MEM/WB.ALUOUTPUT
 			codeObject.setRegisterValue(Integer.parseInt(opcode.substring(16, 21), 2), signExtend(((String) codeObject.getPipelineBufferValue(11)).toUpperCase()));
 			// WB: Registers affected <- Register used
 			codeObject.setPipelineRegisterValue(14, "R" + Integer.parseInt(opcode.substring(16, 21), 2));
+			codeObject.setRegistersUsedValue(Integer.parseInt(opcode.substring(16, 21), 2), false);
+			resetStall();
 			;break;
 		case "010111": // BLTZC
-			// nothing
+			codeObject.setRegistersUsedValue(Integer.parseInt(opcode.substring(6, 11), 2), false);
+			resetStall();
 			;break;
 		case "000010": // J
 			// nothing
@@ -285,6 +363,9 @@ public class PipelineHandler {
 		if(npc.equals("N/A")) {
 			return -1;
 		}
+		if(npc.equals("0")) {
+			return -1;
+		}
 		int lineNum = Integer.parseInt(npc, 16);
 		lineNum -= 4100; // - 4 - 4096
 		lineNum /= 4; // instructions are 4 memory spaces long
@@ -307,24 +388,25 @@ public class PipelineHandler {
 		map.put("EX", getLineNum((String) codeObject.getPipelineRegisterValue(16))); // EX.NPC
 		map.put("MEM", getLineNum((String) codeObject.getPipelineRegisterValue(17))); // MEM.NPC
 		map.put("WB", getLineNum((String) codeObject.getPipelineRegisterValue(18))); // WB.NPC
+		// printMap(map);
 		ArrayList<String> tempList = new ArrayList<>();
 		// populate tempList with status with index matching until last status
 		int end = max(map.get("IF"), map.get("ID"), map.get("EX"), map.get("MEM"), map.get("WB"));
 		for(int i = 0; i <= end; i++) {
-			if(i == map.get("IF")) {
-				tempList.add("IF");
-			}
-			else if(i == map.get("ID")) {
-				tempList.add("ID");
-			}
-			else if(i == map.get("EX")) {
-				tempList.add("EX");
+			if(i == map.get("WB")) {
+				tempList.add("WB");
 			}
 			else if(i == map.get("MEM")) {
 				tempList.add("MEM");
 			}
-			else if(i == map.get("WB")) {
-				tempList.add("WB");
+			else if(i == map.get("EX")) {
+				tempList.add("EX");
+			}
+			else if(i == map.get("ID")) {
+				tempList.add("ID");
+			}
+			else if(i == map.get("IF")) {
+				tempList.add("IF");
 			}
 			else {
 				tempList.add("");

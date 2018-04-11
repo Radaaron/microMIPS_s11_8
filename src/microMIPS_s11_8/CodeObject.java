@@ -13,6 +13,7 @@ public class CodeObject {
 	private int numLines;
 	private HashMap<String, Integer> labelMap;
 	private Object[] registers;
+	private boolean[] registersUsed;
 	private Object[] memory;
 	private Object[] pipelineRegisters;
 	private Object[] pipelineBuffers;
@@ -28,6 +29,10 @@ public class CodeObject {
 		this.registers = new Object[32];
 		for(int i = 0; i< registers.length; i++) {
 			this.registers[i] = "0000000000000000";
+		}
+		this.registersUsed = new boolean[32];
+		for(int i = 0; i< registersUsed.length; i++) {
+			this.registersUsed[i] = false;
 		}
 		this.memory = new Object[8192];
 		for(int i = 0; i< memory.length; i++) {
@@ -106,6 +111,18 @@ public class CodeObject {
 	
 	public Object[] getRegisters() {
 		return this.registers;
+	}
+	
+	public void setRegistersUsedValue(int index, boolean val) {
+		this.registersUsed[index] = val;
+	}
+	
+	public boolean getRegistersUsedValue(int index) {
+		return this.registersUsed[index];
+	}
+	
+	public boolean[] getRegistersUsed() {
+		return this.registersUsed;
 	}
 	
 	public void setRegisterValue(int index, Object val) {
