@@ -149,7 +149,8 @@ public class Driver {
 		internalPipelinePane.setLayout(new BoxLayout(internalPipelinePane, BoxLayout.Y_AXIS));
 		internalPipelinePane.add(internalRegScrollPane);
 		internalPipelinePane.add(executionToolBar);
-		JScrollPane pipeScrollPane = new JScrollPane(pipeTable);
+		JScrollPane pipeScrollPane = new JScrollPane(pipeTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+		pipeTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		pipelineSplitPane.setLeftComponent(internalPipelinePane);
 		pipelineSplitPane.setRightComponent(pipeScrollPane);
 		
@@ -239,24 +240,23 @@ public class Driver {
 
 	public static void executePipeline(DefaultTableModel pipeModel, DefaultTableModel internalRegModel, DefaultTableModel regModel, DefaultTableModel memoryModel, boolean singleStep) {
 		while(!codeObject.isFinished()) {
-			// process backwards to work around dependencies
-			// WB
-			codeObject = pipelineHandler.WBstage(codeObject);
-			// MEM
-			codeObject = pipelineHandler.MEMstage(codeObject);	
-			// EX
-			codeObject = pipelineHandler.EXstage(codeObject);
-			// ID
-			codeObject = pipelineHandler.IDstage(codeObject);
-			// IF
+			// move internal registers to buffers for next use
+			for(int i = 0; i < codeObject.getPipelineRegisters().length; i++) {
+				codeObject.setPipelineBufferValue(i, codeObject.getPipelineRegisterValue(i));
+			}
 			codeObject = pipelineHandler.IFstage(codeObject);
+			codeObject = pipelineHandler.IDstage(codeObject);	
+			codeObject = pipelineHandler.EXstage(codeObject);
+			codeObject = pipelineHandler.MEMstage(codeObject);
+			codeObject = pipelineHandler.WBstage(codeObject);
+			// printPipeline(codeObject);
 			// update tables
 			// pipeline map
 			pipelineCycle++;
 			pipeModel.addColumn(pipelineCycle, pipelineHandler.getCycleInfo(codeObject));
 			// internal pipeline registers
 			for(int i = 0; i < 15; i++) {
-				internalRegModel.setValueAt(codeObject.getPipelineRegisterValue(i), i, 1);
+				internalRegModel.setValueAt(((String) codeObject.getPipelineRegisterValue(i)).toUpperCase(), i, 1);
 			}
 			// registers
 			for(int i = 0; i < codeObject.getRegisters().length; i++) {
@@ -273,7 +273,7 @@ public class Driver {
 	}
 	
 	public static void printPipeline(CodeObject codeObject) {
-		for (Object name : codeObject.getPipelineRegisters()) {
+		for (Object name : codeObject.getPipelineBuffers()) {
 			System.out.println(name);
 		}
 		System.out.println("---------------------");

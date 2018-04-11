@@ -15,6 +15,7 @@ public class CodeObject {
 	private Object[] registers;
 	private Object[] memory;
 	private Object[] pipelineRegisters;
+	private Object[] pipelineBuffers;
 	private ArrayList<ArrayList<Object>> pipelineMap;
 	private int programCounter;
 	private boolean isFinished;
@@ -32,9 +33,13 @@ public class CodeObject {
 		for(int i = 0; i< memory.length; i++) {
 			this.memory[i] = "00";
 		}
-		this.pipelineRegisters = new Object[19];
+		this.pipelineRegisters = new Object[20];
 		for(int i = 0; i< pipelineRegisters.length; i++) {
 			this.pipelineRegisters[i] = "N/A";
+		}
+		this.pipelineBuffers = new Object[20];
+		for(int i = 0; i< pipelineBuffers.length; i++) {
+			this.pipelineBuffers[i] = "N/A";
 		}
 		this.pipelineMap = new ArrayList<>();
 		this.programCounter = 4096; // start at 0x01000
@@ -58,7 +63,7 @@ public class CodeObject {
 		this.isStarted = true;
 	}
 	
-	public String getNextInstruction() {
+	public String getInstruction() {
 		String ins = "";
 		for(int i = this.programCounter; i < this.programCounter + 4; i++) {
 			ins = this.memory[i] + ins;
@@ -67,7 +72,7 @@ public class CodeObject {
 	}
 
 	public int getProgramCounter() {
-		return programCounter;
+		return this.programCounter;
 	}
 
 	public void setProgramCounter(int programCounter) {
@@ -90,12 +95,13 @@ public class CodeObject {
 		return this.pipelineRegisters;
 	}
 	
-	public void setPipelineRegisterValue(int index, Object val) {
+	public Object setPipelineRegisterValue(int index, Object val) {
 		this.pipelineRegisters[index] = val;
+		return val;
 	}
 	
 	public Object getRegisterValue(int index) {
-		return registers[index];
+		return this.registers[index];
 	}
 	
 	public Object[] getRegisters() {
@@ -104,6 +110,18 @@ public class CodeObject {
 	
 	public void setRegisterValue(int index, Object val) {
 		this.registers[index] = val;
+	}
+	
+	public Object getPipelineBufferValue(int index) {
+		return this.pipelineBuffers[index];
+	}
+	
+	public Object[] getPipelineBuffers() {
+		return this.pipelineBuffers;
+	}
+	
+	public void setPipelineBufferValue(int index, Object val) {
+		this.pipelineBuffers[index] = val;
 	}
 	
 	public Object getMemoryValue(int index) {
