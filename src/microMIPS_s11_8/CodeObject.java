@@ -80,8 +80,9 @@ public class CodeObject {
 		return this.programCounter;
 	}
 
-	public void setProgramCounter(int programCounter) {
+	public int setProgramCounter(int programCounter) {
 		this.programCounter = programCounter;
+		return this.programCounter;
 	}
 
 	public Object getPipelineMapValue(int index) {

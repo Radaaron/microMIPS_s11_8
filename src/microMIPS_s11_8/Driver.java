@@ -70,9 +70,8 @@ public class Driver {
 			@SuppressWarnings({ "rawtypes", "unchecked" })
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				TableRowSorter sorter = new TableRowSorter((DefaultTableModel) memoryTable.getModel());
-				memoryTable.setRowSorter(sorter);
-				sorter.setRowFilter(RowFilter.regexFilter(searchTextArea.getText()));
+				Rectangle cellRect = memoryTable.getCellRect(Integer.parseInt(searchTextArea.getText(), 16), 0, true);
+				memoryTable.scrollRectToVisible(cellRect);
 			}
 		});
 		memorySearchToolBar.add(gotoLabel);

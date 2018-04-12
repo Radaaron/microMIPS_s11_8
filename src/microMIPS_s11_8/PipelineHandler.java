@@ -37,13 +37,13 @@ public class PipelineHandler {
 		}
 		// PC + 4
 		codeObject.setProgramCounter(codeObject.getProgramCounter() + 4);
-		codeObject.setPipelineRegisterValue(1, Integer.toHexString(codeObject.getProgramCounter()));
+		codeObject.setPipelineRegisterValue(1, Integer.toString(codeObject.getProgramCounter(), 16));
 		codeObject.setPipelineRegisterValue(0, opcode);
 		opcode = converter.hexToBinary(opcode, 32); // convert to binary
 		// IF/ID.PC <- (if(EX/MEM.cond{EX/MEM.ALUOUTPUT} else retain))
 		if(((String)codeObject.getPipelineBufferValue(9)).equals("1")) {
 			codeObject.setProgramCounter(Integer.parseInt((String) codeObject.getPipelineBufferValue(7), 16));
-			codeObject.setPipelineRegisterValue(1, Integer.toHexString(Integer.parseInt((String) codeObject.getPipelineBufferValue(7), 16)));
+			codeObject.setPipelineRegisterValue(1, Integer.toString(Integer.parseInt((String) codeObject.getPipelineBufferValue(7), 16), 16));
 		}
 		codeObject.setStarted();
 		return codeObject;
@@ -64,7 +64,7 @@ public class PipelineHandler {
 		String opcode = (String) codeObject.setPipelineRegisterValue(2, codeObject.getPipelineBufferValue(0));
 		opcode = converter.hexToBinary(opcode, 32); // convert to binary
 		// check for data hazards by checking if operands are being used (RAW and WAW) and if not, set destination register as used
-		// if found, send "N/A" and return IR and NPC to IF  and decrement program counter (stall)
+		// if found, send "N/A" and return IR and NPC to IF and decrement program counter (stall)
 		switch(opcode.substring(0, 6)) {
 		case "110111": // LD
 			if(codeObject.getRegistersUsedValue(Integer.parseInt(opcode.substring(6, 11), 2)) || codeObject.getRegistersUsedValue(Integer.parseInt(opcode.substring(11, 16), 2))){
@@ -108,9 +108,14 @@ public class PipelineHandler {
 		// ID/EX.B <- Regs[IF/ID.IR11...15]
 		codeObject.setPipelineRegisterValue(4, codeObject.getRegisterValue(Integer.parseInt(opcode.substring(11, 16), 2)));
 		// ID/EX.Imm <- IF/ID.IR16...31
-		codeObject.setPipelineRegisterValue(5, Integer.toHexString((Integer.parseInt(opcode.substring(16, opcode.length()), 2))));
+		codeObject.setPipelineRegisterValue(5, Integer.toString((Integer.parseInt(opcode.substring(16, opcode.length()), 2)), 16));
 		// HIDDEN: ID.NPC <- // IF/ID.PC
 		codeObject.setPipelineRegisterValue(15, codeObject.getPipelineBufferValue(1));
+		// if a data stalled instruction is last, the IF stage doesn't move on, so check if they are the same and force close IF if they are
+		if(codeObject.getPipelineRegisterValue(0).equals(codeObject.getPipelineRegisterValue(2)) || codeObject.getPipelineRegisterValue(1).equals(codeObject.getPipelineRegisterValue(15))) {
+			codeObject.setPipelineRegisterValue(0, "N/A");
+			codeObject.setPipelineRegisterValue(1, "N/A");
+		}
 		return codeObject;
 	}
 	
@@ -134,8 +139,8 @@ public class PipelineHandler {
 		switch(opcode.substring(0, 6)) {
 		case "110111": // LD
 			// EX/MEM.ALUOUTPUT <- ID/EX.A + ID/EX.Imm
-			codeObject.setPipelineRegisterValue(7, Integer.toHexString(Integer.parseInt((String) codeObject.getPipelineBufferValue(3), 16) 
-					+ Integer.parseInt((String) codeObject.getPipelineBufferValue(5), 16)));
+			codeObject.setPipelineRegisterValue(7, Integer.toString(Integer.parseInt((String) codeObject.getPipelineBufferValue(3), 16) 
+					+ Integer.parseInt((String) codeObject.getPipelineBufferValue(5), 16), 16));
 			// EX/MEM.B <- ID/EX.B
 			codeObject.setPipelineRegisterValue(8, codeObject.getPipelineBufferValue(4));
 			// EX/MEM.Cond <- 0
@@ -143,8 +148,8 @@ public class PipelineHandler {
 			;break;
 		case "111111": // SD
 			// EX/MEM.ALUOUTPUT <- ID/EX.A + ID/EX.Imm
-			codeObject.setPipelineRegisterValue(7, Integer.toHexString(Integer.parseInt((String) codeObject.getPipelineBufferValue(3), 16) 
-					+ Integer.parseInt((String) codeObject.getPipelineBufferValue(5), 16)));
+			codeObject.setPipelineRegisterValue(7, Integer.toString(Integer.parseInt((String) codeObject.getPipelineBufferValue(3), 16) 
+					+ Integer.parseInt((String) codeObject.getPipelineBufferValue(5), 16), 16));
 			// EX/MEM.B <- ID/EX.B
 			codeObject.setPipelineRegisterValue(8, codeObject.getPipelineBufferValue(4));
 			// EX/MEM.Cond <- 0
@@ -152,15 +157,15 @@ public class PipelineHandler {
 			;break;
 		case "011001": // DADDIU
 			// EX/MEM.ALUOUTPUT <- ID/EX.A (add) ID/EX.Imm
-			codeObject.setPipelineRegisterValue(7, Integer.toHexString(Integer.parseInt((String) codeObject.getPipelineBufferValue(3), 16) 
-					+ Integer.parseInt((String) codeObject.getPipelineBufferValue(5), 16)));
+			codeObject.setPipelineRegisterValue(7, Integer.toString(Integer.parseInt((String) codeObject.getPipelineBufferValue(3), 16) 
+					+ Integer.parseInt((String) codeObject.getPipelineBufferValue(5), 16), 16));
 			// EX/MEM.Cond <- 0
 			codeObject.setPipelineRegisterValue(9, "0");
 			;break;
 		case "001110": // XORI
 			// EX/MEM.ALUOUTPUT <- ID/EX.A (xor) ID/EX.Imm
-			codeObject.setPipelineRegisterValue(7, Integer.toHexString(Integer.parseInt((String) codeObject.getPipelineBufferValue(3), 16) 
-					^ Integer.parseInt((String) codeObject.getPipelineBufferValue(5), 16)));
+			codeObject.setPipelineRegisterValue(7, Integer.toString(Integer.parseInt((String) codeObject.getPipelineBufferValue(3), 16) 
+					^ Integer.parseInt((String) codeObject.getPipelineBufferValue(5), 16), 16));
 			// EX/MEM.Cond <- 0
 			codeObject.setPipelineRegisterValue(9, "0");
 			;break;
@@ -169,16 +174,15 @@ public class PipelineHandler {
 			// check func
 			switch(opcode.substring(26, opcode.length())) {
 			case "101101": // DADDU
-				System.out.println(codeObject.getPipelineBufferValue(3) + " + " + codeObject.getPipelineBufferValue(4));
-				codeObject.setPipelineRegisterValue(7, Integer.toHexString(Integer.parseInt((String) codeObject.getPipelineBufferValue(3), 16)
-						+ Integer.parseInt((String) codeObject.getPipelineBufferValue(4), 16)));
+				codeObject.setPipelineRegisterValue(7, Integer.toString(Integer.parseInt((String) codeObject.getPipelineBufferValue(3), 16)
+						+ Integer.parseInt((String) codeObject.getPipelineBufferValue(4), 16), 16));
 				;break;
 			case "101010": // SLT
 				if(Integer.parseInt((String) codeObject.getPipelineBufferValue(3), 16) < Integer.parseInt((String) codeObject.getPipelineBufferValue(4), 16)) {
-					codeObject.setPipelineRegisterValue(7, Integer.toHexString(1));
+					codeObject.setPipelineRegisterValue(7, Integer.toString(1, 16));
 				} 
 				else {
-					codeObject.setPipelineRegisterValue(7, Integer.toHexString(0));
+					codeObject.setPipelineRegisterValue(7, Integer.toString(0, 16));
 				}
 				;break;
 			}
@@ -187,7 +191,7 @@ public class PipelineHandler {
 			;break;
 		case "010111": // BLTZC
 			// EX/MEM.ALUOUTPUT <- ID/EX.PC + ID/EX.Imm
-			codeObject.setPipelineRegisterValue(7, Integer.toHexString(npc + Integer.parseInt((String) codeObject.getPipelineBufferValue(5), 16)));
+			codeObject.setPipelineRegisterValue(7, Integer.toString(npc + Integer.parseInt((String) codeObject.getPipelineBufferValue(5), 16), 16));
 			// EX/MEM.Cond <- (ID/EX.A op 0)
 			if(Integer.parseInt((String) codeObject.getPipelineBufferValue(3), 16) < 0) {
 				codeObject.setPipelineRegisterValue(9, "1");
@@ -202,7 +206,7 @@ public class PipelineHandler {
 					+ Integer.parseInt((String) codeObject.getPipelineBufferValue(4), 16)
 					+ Integer.parseInt((String) codeObject.getPipelineBufferValue(5), 16);
 			immediate = immediate << 2;
-			codeObject.setPipelineRegisterValue(7, Integer.toHexString(immediate + 4096));
+			codeObject.setPipelineRegisterValue(7, Integer.toString(immediate + 4096, 16));
 			// EX/MEM.Cond <- 1
 			codeObject.setPipelineRegisterValue(9, "1");
 			;break;
@@ -236,7 +240,7 @@ public class PipelineHandler {
 			codeObject.storeInMemory(Integer.parseInt((String) codeObject.getPipelineBufferValue(7), 16), (String) codeObject.getPipelineBufferValue(8));
 			// MEM: Actual memory affected <- EX/MEM.B " - " EX/MEM.B + 7 (8 memory spaces for a dword)
 			codeObject.setPipelineRegisterValue(13, (String) codeObject.getPipelineBufferValue(7) + " - " 
-					+ Integer.toHexString(Integer.parseInt((String) codeObject.getPipelineBufferValue(7), 16) + 7));
+					+ Integer.toString(Integer.parseInt((String) codeObject.getPipelineBufferValue(7), 16) + 7, 16));
 			;break;
 		case "011001": // DADDIU
 			// MEM/WB.ALUOUTPUT <- EX/MEM.ALUOUTPUT
@@ -313,7 +317,6 @@ public class PipelineHandler {
 			codeObject.setRegistersUsedValue(Integer.parseInt(opcode.substring(6, 11), 2), false);
 			;break;
 		case "000010": // J
-			// nothing
 		}
 		// HIDDEN: WB.NPC <- MEM.NPC
 		codeObject.setPipelineRegisterValue(18, codeObject.getPipelineBufferValue(17));
@@ -322,14 +325,8 @@ public class PipelineHandler {
 	
 	public String signExtend(String in) {
 		String extend = "";
-		if(in.length() >= 4 && Character.getNumericValue(in.charAt(0)) >= 8) {
-			for(int i = 0; i < (16 - in.length()); i++) {
-				extend = extend + "F";
-			}
-		} else {
-			for(int i = 0; i < (16 - in.length()); i++) {
-				extend = extend + "0";
-			}
+		for(int i = 0; i < (16 - in.length()); i++) {
+			extend = extend + "0";
 		}
 		return in = extend + in;
 	}
